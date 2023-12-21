@@ -11,6 +11,7 @@
 *.ilk
 *.map
 *.exp
+*.list
 
 # Precompiled Headers
 *.gch
@@ -35,6 +36,8 @@
 *.i*86
 *.x86_64
 *.hex
+*.cyclo
+*.o
 
 # Debug files
 *.dSYM/
@@ -43,6 +46,9 @@
 *.pdb
 Debug/
 *Debug.launch
+
+# Release files
+Release/
 
 # Kernel Module Compile Results
 *.mod*
@@ -53,3 +59,12 @@ Module.symvers
 Mkfile.old
 dkms.conf
 Core/Src/main.c
+
+# CubeIDE specific files
+.lock
+.log
+specs.c
+specs.cpp
+history.version
+properties.version
+.settings/
