@@ -6,22 +6,42 @@
       {
          "label": "build debug",
          "type": "shell",
-         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -build cs50_project/Debug"
+         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -build cs50_project/Debug",
+         "problemMatcher": [],
+         "group": {
+            "kind": "build",
+            "isDefault": true
+         }
       },
       {
          "label": "clean build debug",
          "type": "shell",
-         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -cleanBuild cs50_project/Debug"
+         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -cleanBuild cs50_project/Debug",
+         "problemMatcher": [],
+         "group": {
+            "kind": "build",
+            "isDefault": false
+         }
       },
       {
          "label": "build release",
          "type": "shell",
-         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -build cs50_project/Release"
+         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -build cs50_project/Release",
+         "problemMatcher": [],
+         "group": {
+            "kind": "build",
+            "isDefault": false
+         }
       },
       {
          "label": "clean build release",
          "type": "shell",
-         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -cleanBuild cs50_project/Release"
+         "command": "~/stm32/CubeIDE_1.14.0/stm32cubeide -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild -data ~/STM32CubeIDE/workspace_1.14.0 -cleanBuild cs50_project/Release",
+         "problemMatcher": [],
+         "group": {
+            "kind": "build",
+            "isDefault": false
+         }
       }
    ]
 }
