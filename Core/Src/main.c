@@ -21,12 +21,17 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "mmc5603nj.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef enum {
+  STATE_INIT,
+  STATE_MEASURE,
+  STATE_SEND,
+  STATE_ERROR
+} STATES_APP_ENUM;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -54,7 +59,7 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void app(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -69,8 +74,6 @@ static void MX_I2C1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  const uint8_t test_msg[] = "Test\n";
-  const uint16_t test_sz = sizeof(test_msg) - 1U;
 
   /* USER CODE END 1 */
 
@@ -103,9 +106,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    HAL_GPIO_TogglePin(GPIOA, GPIO_BSRR_BS_5);
-    HAL_UART_Transmit(&huart2, test_msg, test_sz, 100U);
-    HAL_Delay(1000);
+    app();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -317,7 +318,40 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void app(void)
+{
+  static STATES_APP_ENUM state = STATE_INIT;
 
+  switch (state)
+  {
+    case (STATE_INIT):
+    {
+      static MMC_STATUS_ENUM mmc_status;
+      mmc_status = MMC5603NJ_init(&hi2c1);
+
+      if (mmc_status == MMC_READY)
+      {
+        state = STATE_MEASURE;
+      }
+      else if (mmc_status == MMC_ERROR)
+      {
+        state = STATE_ERROR;
+      }
+      break;
+    }
+    case (STATE_MEASURE):
+    {
+      break;
+    }
+    case (STATE_SEND):
+    {
+      break;
+    }
+    case (STATE_ERROR):
+    default:
+      break;
+  }
+}
 /* USER CODE END 4 */
 
 /**
