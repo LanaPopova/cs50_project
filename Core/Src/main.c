@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "mmc5603nj.h"
 /* USER CODE END Includes */
 
@@ -60,6 +61,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void app(void);
+static char* get_state_name(STATES_APP_ENUM current_state);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -320,7 +322,11 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 static void app(void)
 {
+  static uint8_t buffer[64] = {0};
   static STATES_APP_ENUM state = STATE_INIT;
+  static STATES_APP_ENUM state_was;
+
+  state_was = state;
 
   switch (state)
   {
@@ -351,6 +357,43 @@ static void app(void)
     default:
       break;
   }
+
+  if (state != state_was)
+  {
+    sprintf((char*)buffer, "[%lu]state=%s\r\n", HAL_GetTick(), get_state_name(state));
+    HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 100U);
+  }
+}
+
+static char* get_state_name(STATES_APP_ENUM current_state)
+{
+  static const char *state_init_ptr = "STATE_INIT";
+  static const char *state_meas_ptr = "STATE_MEASURE";
+  static const char *state_send_ptr = "STATE_SEND";
+  static const char *state_erro_ptr = "STATE_ERROR";
+  static const char *state_unkn_ptr = "STATE_UNKNOWN";
+  static char *state_name_ptr;
+
+  switch (current_state)
+  {
+    case (STATE_INIT):
+      state_name_ptr = (char*)state_init_ptr;
+      break;
+    case (STATE_MEASURE):
+      state_name_ptr = (char*)state_meas_ptr;
+      break;
+    case (STATE_SEND):
+      state_name_ptr = (char*)state_send_ptr;
+      break;
+    case (STATE_ERROR):
+      state_name_ptr = (char*)state_erro_ptr;
+      break;
+    default:
+      state_name_ptr = (char*)state_unkn_ptr;
+      break;
+  }
+
+  return state_name_ptr;
 }
 /* USER CODE END 4 */
 
