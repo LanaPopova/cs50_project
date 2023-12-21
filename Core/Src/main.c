@@ -69,6 +69,8 @@ static void MX_I2C1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+   const uint8_t test_msg[] = "Test\n";
+   const uint16_t test_sz = sizeof(test_msg) - 1U;
 
   /* USER CODE END 1 */
 
@@ -102,7 +104,8 @@ int main(void)
   {
     /* USER CODE END WHILE */
     HAL_GPIO_TogglePin(GPIOA, GPIO_BSRR_BS_5);
-    HAL_Delay(100);
+    HAL_UART_Transmit(&huart2, test_msg, test_sz, 100U);
+    HAL_Delay(1000);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -216,7 +219,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
