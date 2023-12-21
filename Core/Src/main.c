@@ -21,17 +21,17 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
 #include "mmc5603nj.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef enum {
-  STATE_INIT,
-  STATE_MEASURE,
-  STATE_SEND,
-  STATE_ERROR
+  APP_INIT,
+  APP_MEASURE,
+  APP_SEND,
+  APP_ERROR
 } STATES_APP_ENUM;
 /* USER CODE END PTD */
 
@@ -60,8 +60,8 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
-static void app(void);
-static char* get_state_name(STATES_APP_ENUM current_state);
+static void app(UART_HandleTypeDef *handle_uart);
+static char* get_str_state_app(STATES_APP_ENUM state_app_crnt);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -108,7 +108,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    app();
+    app(&huart2);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -320,80 +320,81 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-static void app(void)
+static void app(UART_HandleTypeDef *handle_uart)
 {
-  static uint8_t buffer[64] = {0};
-  static STATES_APP_ENUM state = STATE_INIT;
-  static STATES_APP_ENUM state_was;
+  static STATES_APP_ENUM state_app = APP_INIT;
+  static STATES_APP_ENUM state_app_was;
+  static uint8_t buffer_app[32] = {0};
 
-  state_was = state;
+  state_app_was = state_app;
 
-  switch (state)
+  switch (state_app)
   {
-    case (STATE_INIT):
+    case (APP_INIT):
     {
-      static MMC_STATUS_ENUM mmc_status;
-      mmc_status = MMC5603NJ_init(&hi2c1);
+      static STATES_MMC_ENUM state_mmc;
+      state_mmc = MMC5603NJ_init(&hi2c1, handle_uart);
 
-      if (mmc_status == MMC_READY)
+      if (state_mmc == MMC_READY)
       {
-        state = STATE_MEASURE;
+        state_app = APP_MEASURE;
       }
-      else if (mmc_status == MMC_ERROR)
+      else if (state_mmc == MMC_ERROR)
       {
-        state = STATE_ERROR;
+        state_app = MMC_ERROR;
       }
       break;
     }
-    case (STATE_MEASURE):
+    case (APP_MEASURE):
     {
       break;
     }
-    case (STATE_SEND):
+    case (APP_SEND):
     {
       break;
     }
-    case (STATE_ERROR):
+    case (APP_ERROR):
     default:
       break;
   }
 
-  if (state != state_was)
+  if (handle_uart != NULL && state_app != state_app_was)
   {
-    sprintf((char*)buffer, "[%lu]state=%s\r\n", HAL_GetTick(), get_state_name(state));
-    HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 100U);
+    sprintf((char*) buffer_app, "[%lu]state_app=%s\r\n", HAL_GetTick(),
+            get_str_state_app(state_app));
+    HAL_UART_Transmit(handle_uart, buffer_app, sizeof(buffer_app), 100U);
   }
 }
 
-static char* get_state_name(STATES_APP_ENUM current_state)
+static char* get_str_state_app(STATES_APP_ENUM state_app_crnt)
 {
-  static const char *state_init_ptr = "STATE_INIT";
-  static const char *state_meas_ptr = "STATE_MEASURE";
-  static const char *state_send_ptr = "STATE_SEND";
-  static const char *state_erro_ptr = "STATE_ERROR";
-  static const char *state_unkn_ptr = "STATE_UNKNOWN";
-  static char *state_name_ptr;
+  static const char *state_app_str_init = "STATE_APP_INIT";
+  static const char *state_app_str_meas = "STATE_APP_MEASURE";
+  static const char *state_app_str_send = "STATE_APP_SEND";
+  static const char *state_app_str_erro = "STATE_APP_ERROR";
+  static const char *state_app_str_unkn = "STATE_APP_UNKNOWN";
+  static char *state_app_str;
 
-  switch (current_state)
+  switch (state_app_crnt)
   {
-    case (STATE_INIT):
-      state_name_ptr = (char*)state_init_ptr;
+    case (APP_INIT):
+      state_app_str = (char*) state_app_str_init;
       break;
-    case (STATE_MEASURE):
-      state_name_ptr = (char*)state_meas_ptr;
+    case (APP_MEASURE):
+      state_app_str = (char*) state_app_str_meas;
       break;
-    case (STATE_SEND):
-      state_name_ptr = (char*)state_send_ptr;
+    case (APP_SEND):
+      state_app_str = (char*) state_app_str_send;
       break;
-    case (STATE_ERROR):
-      state_name_ptr = (char*)state_erro_ptr;
+    case (APP_ERROR):
+      state_app_str = (char*) state_app_str_erro;
       break;
     default:
-      state_name_ptr = (char*)state_unkn_ptr;
+      state_app_str = (char*) state_app_str_unkn;
       break;
   }
 
-  return state_name_ptr;
+  return state_app_str;
 }
 /* USER CODE END 4 */
 
