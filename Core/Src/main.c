@@ -332,6 +332,7 @@ static void app(UART_HandleTypeDef *handle_uart)
     if (state_mmc == MMC_READY)
     {
       state_app = APP_MEASURE;
+      HAL_GPIO_TogglePin(GPIOA, GPIO_BSRR_BS_5);
     }
     else if (state_mmc == MMC_ERROR)
     {
@@ -357,7 +358,7 @@ static void app(UART_HandleTypeDef *handle_uart)
   }
   case (APP_SEND):
   {
-    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "[%lu]%f,%f,%f\r\n", HAL_GetTick(),
+    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f\r\n", HAL_GetTick(),
              data.x, data.y, data.z);
     HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
     state_app = APP_MEASURE;
