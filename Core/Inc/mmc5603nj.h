@@ -19,6 +19,8 @@
 
 #include "stm32f0xx_hal.h"
 
+#define MMC5603NJ_MEAS_REGS 9U
+
 typedef enum
 {
   MMC_INIT,
@@ -29,9 +31,19 @@ typedef enum
   MMC_MEAS_INIT,
   MMC_MEAS_START,
   MMC_MEAS_WAIT,
-  MMC_MEAS_READY
-} STATES_MMC_ENUM;
+  MMC_MEAS_READY,
+  MMC_MEAS_DONE
+} MMC5603NJ_STATES_ENUM;
 
-STATES_MMC_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart);
+typedef struct
+{
+  float x;
+  float y;
+  float z;
+} MMC5603NJ_DATA_STRUCT;
+
+MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart);
+MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart, uint8_t *buf_ptr, size_t buf_sz);
+void MMC5603NJ_get_measurement(uint8_t *buf_ptr, size_t buf_sz, MMC5603NJ_DATA_STRUCT *data_ptr);
 
 #endif /* INC_MMC5603NJ_H_ */

@@ -20,6 +20,7 @@
 
 #define MMC_ADDR 0x60U // Device I2C address shifted to the left by 1 bit.
 #define MMC_NUM_REGS 22U
+#define MMC_LSB 0.00625f
 
 typedef enum
 {
@@ -47,7 +48,7 @@ typedef enum
   PID = 0x39
 } REG_ADDRS_ENUM;
 
-static uint8_t buffer_mmc[64] = {0};
+static uint8_t buf_diag_mmc[64];
 static const REG_ADDRS_ENUM reg_addrs[MMC_NUM_REGS] = {
     XOUT0,
     XOUT1,
@@ -73,7 +74,7 @@ static const REG_ADDRS_ENUM reg_addrs[MMC_NUM_REGS] = {
     PID};
 
 static bool check_reg_addr(uint8_t reg_addr);
-static char *get_str_state_mmc(STATES_MMC_ENUM state_mmc_crnt);
+static char *get_str_state_mmc(MMC5603NJ_STATES_ENUM state_mmc_crnt);
 static bool read_registers(I2C_HandleTypeDef *handle_i2c,
                            uint8_t reg_addr,
                            uint8_t *buf_rx,
@@ -103,7 +104,7 @@ static bool check_reg_addr(uint8_t reg_addr)
   return is_valid;
 }
 
-static char *get_str_state_mmc(STATES_MMC_ENUM state_mmc_crnt)
+static char *get_str_state_mmc(MMC5603NJ_STATES_ENUM state_mmc_crnt)
 {
   static const char *state_mmc_str_init = "STATE_MMC_INIT";
   static const char *state_mmc_str_chal = "STATE_MMC_CHECK_HAL";
@@ -221,10 +222,10 @@ static bool write_registers(I2C_HandleTypeDef *handle_i2c,
   return mmc_write_status;
 }
 
-STATES_MMC_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart)
+MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart)
 {
-  static STATES_MMC_ENUM state_init = MMC_INIT;
-  static STATES_MMC_ENUM state_init_was;
+  static MMC5603NJ_STATES_ENUM state_init = MMC_INIT;
+  static MMC5603NJ_STATES_ENUM state_init_was;
 
   state_init_was = state_init;
 
@@ -271,25 +272,25 @@ STATES_MMC_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef
 
   if (handle_uart != NULL && state_init != state_init_was)
   {
-    snprintf((char *)buffer_mmc, sizeof(buffer_mmc), "[%lu]state_mmc=%s\r\n", HAL_GetTick(),
+    snprintf((char *)buf_diag_mmc, sizeof(buf_diag_mmc), "[%lu]state_mmc=%s\r\n", HAL_GetTick(),
              get_str_state_mmc(state_init));
-    HAL_UART_Transmit(handle_uart, buffer_mmc, sizeof(buffer_mmc), 100U);
+    HAL_UART_Transmit(handle_uart, buf_diag_mmc, sizeof(buf_diag_mmc), 100U);
   }
 
   return state_init;
 }
 
-STATES_MMC_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart)
+MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart, uint8_t *buf_ptr, size_t buf_sz)
 {
-  static STATES_MMC_ENUM state_meas = MMC_MEAS_INIT;
-  static STATES_MMC_ENUM state_meas_was;
+  static MMC5603NJ_STATES_ENUM state_meas = MMC_MEAS_INIT;
+  static MMC5603NJ_STATES_ENUM state_meas_was;
 
   state_meas_was = state_meas;
 
   switch (state_meas)
   {
   case (MMC_MEAS_INIT):
-    if (handle_i2c == NULL)
+    if (handle_i2c == NULL || buf_ptr == NULL || buf_sz < MMC5603NJ_MEAS_REGS)
     {
       state_meas = MMC_ERROR;
     }
@@ -324,6 +325,17 @@ STATES_MMC_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleType
     }
     break;
   case (MMC_MEAS_READY):
+    if (read_registers(handle_i2c, XOUT0, buf_ptr, buf_sz, MMC5603NJ_MEAS_REGS))
+    {
+      state_meas = MMC_MEAS_DONE;
+    }
+    else
+    {
+      state_meas = MMC_ERROR;
+    }
+    break;
+  case (MMC_MEAS_DONE):
+    state_mmc = MMC_MEAS_START;
     break;
   case (MMC_ERROR):
   default:
@@ -332,10 +344,34 @@ STATES_MMC_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleType
 
   if (handle_uart != NULL && state_meas != state_meas_was)
   {
-    snprintf((char *)buffer_mmc, sizeof(buffer_mmc), "[%lu]state_mmc=%s\r\n", HAL_GetTick(),
+    snprintf((char *)buf_diag_mmc, sizeof(buf_diag_mmc), "[%lu]state_mmc=%s\r\n", HAL_GetTick(),
              get_str_state_mmc(state_meas));
-    HAL_UART_Transmit(handle_uart, buffer_mmc, sizeof(buffer_mmc), 100U);
+    HAL_UART_Transmit(handle_uart, buf_diag_mmc, sizeof(buf_diag_mmc), 100U);
   }
 
   return state_meas;
+}
+
+void MMC5603NJ_get_measurement(uint8_t *buf_ptr, size_t buf_sz, MMC5603NJ_DATA_STRUCT *data_ptr)
+{
+  static int32_t meas_x;
+  static int32_t meas_y;
+  static int32_t meas_z;
+
+  if (buf_ptr == NULL || buf_sz != MMC5603NJ_MEAS_REGS || data_ptr == NULL)
+  {
+    return;
+  }
+
+  meas_x = (uint32_t)(*(buf_ptr + 0)) << 12 | (uint32_t)(*(buf_ptr + 1)) << 4 | (uint32_t)(*(buf_ptr + 6)) >> 4;
+  meas_y = (uint32_t)(*(buf_ptr + 2)) << 12 | (uint32_t)(*(buf_ptr + 3)) << 4 | (uint32_t)(*(buf_ptr + 7)) >> 4;
+  meas_z = (uint32_t)(*(buf_ptr + 4)) << 12 | (uint32_t)(*(buf_ptr + 5)) << 4 | (uint32_t)(*(buf_ptr + 8)) >> 4;
+
+  meas_x -= (uint32_t)1 << 19;
+  meas_y -= (uint32_t)1 << 19;
+  meas_z -= (uint32_t)1 << 19;
+
+  data_ptr->x = (float)meas_x * MMC_LSB;
+  data_ptr->y = (float)meas_y * MMC_LSB;
+  data_ptr->z = (float)meas_z * MMC_LSB;
 }
