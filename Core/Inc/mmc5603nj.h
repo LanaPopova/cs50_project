@@ -19,12 +19,17 @@
 
 #include "stm32f0xx_hal.h"
 
-typedef enum {
+typedef enum
+{
   MMC_INIT,
   MMC_CHECK_HAL,
   MMC_CHECK_DEV,
   MMC_READY,
-  MMC_ERROR
+  MMC_ERROR,
+  MMC_MEAS_INIT,
+  MMC_MEAS_START,
+  MMC_MEAS_WAIT,
+  MMC_MEAS_READY
 } STATES_MMC_ENUM;
 
 STATES_MMC_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart);
