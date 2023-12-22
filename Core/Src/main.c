@@ -332,7 +332,7 @@ static void app(UART_HandleTypeDef *handle_uart)
     }
     else if (state_mmc == MMC_ERROR)
     {
-      state_app = MMC_ERROR;
+      state_app = APP_ERROR;
     }
     break;
   }

@@ -15,19 +15,50 @@
  along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include "mmc5603nj.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 #define MMC5603NJ_ADDR 0x60U // Device I2C address shifted to the left by 1 bit.
+#define MMC5603NJ_NUM_REGS 22U
 
 static uint8_t buffer_mmc[64] = {0};
+static uint8_t reg_addrs[MMC5603NJ_NUM_REGS] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                                0x08, 0x09, 0x18, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E,
+                                                0x1F, 0x20, 0x27, 0x28, 0x29, 0x39};
 
+static bool check_reg_addr(uint8_t reg_addr);
 static char *get_str_state_mmc(STATES_MMC_ENUM state_mmc_crnt);
+static bool read_registers(I2C_HandleTypeDef *handle_i2c,
+                           uint8_t reg_addr,
+                           uint8_t *buf_rx,
+                           size_t buf_sz,
+                           size_t num_regs);
+
+static bool check_reg_addr(uint8_t reg_addr)
+{
+  static bool is_valid;
+  static uint8_t i;
+
+  is_valid = false;
+
+  for (i = 0; i < MMC5603NJ_NUM_REGS; i++)
+  {
+    if (reg_addr == reg_addrs[i])
+    {
+      is_valid = true;
+      break;
+    }
+  }
+
+  return is_valid;
+}
 
 static char *get_str_state_mmc(STATES_MMC_ENUM state_mmc_crnt)
 {
   static const char *state_mmc_str_init = "STATE_MMC_INIT";
   static const char *state_mmc_str_chal = "STATE_MMC_CHECK_HAL";
   static const char *state_mmc_str_cdev = "STATE_MMC_CHECK_DEV";
+  static const char *state_mmc_str_redy = "STATE_MMC_READY";
   static const char *state_mmc_str_erro = "STATE_MMC_ERROR";
   static const char *state_mmc_str_unkn = "STATE_MMC_UNKNOWN";
   static char *state_mmc_str;
@@ -43,6 +74,9 @@ static char *get_str_state_mmc(STATES_MMC_ENUM state_mmc_crnt)
   case (MMC_CHECK_DEV):
     state_mmc_str = (char *)state_mmc_str_cdev;
     break;
+  case (MMC_READY):
+    state_mmc_str = (char *)state_mmc_str_redy;
+    break;
   case (MMC_ERROR):
     state_mmc_str = (char *)state_mmc_str_erro;
     break;
@@ -52,6 +86,50 @@ static char *get_str_state_mmc(STATES_MMC_ENUM state_mmc_crnt)
   }
 
   return state_mmc_str;
+}
+
+static bool read_registers(I2C_HandleTypeDef *handle_i2c,
+                           uint8_t reg_addr,
+                           uint8_t *buf_rx,
+                           size_t buf_sz,
+                           size_t num_regs)
+{
+  static bool mmc_read_status;
+  static uint8_t buf_tx[1];
+
+  mmc_read_status = false;
+
+  do
+  {
+    if (handle_i2c == NULL || buf_rx == NULL)
+    {
+      break;
+    }
+
+    if (!check_reg_addr(reg_addr) ||
+        num_regs == 0 ||
+        num_regs > MMC5603NJ_NUM_REGS ||
+        buf_sz < num_regs)
+    {
+      break;
+    }
+
+    buf_tx[0] = reg_addr;
+
+    if (HAL_I2C_Master_Transmit(handle_i2c, MMC5603NJ_ADDR, buf_tx, sizeof(buf_tx), 100U) != HAL_OK)
+    {
+      break;
+    }
+
+    if (HAL_I2C_Master_Receive(handle_i2c, MMC5603NJ_ADDR, buf_rx, num_regs, 100U) != HAL_OK)
+    {
+      break;
+    }
+
+    mmc_read_status = true;
+  } while (0);
+
+  return mmc_read_status;
 }
 
 STATES_MMC_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart)
@@ -86,8 +164,15 @@ STATES_MMC_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef
     }
     break;
   case (MMC_CHECK_DEV):
-    // TODO: read chip ID register
-    state_dev = MMC_READY;
+    uint8_t reg_prod_id;
+    if (read_registers(handle_i2c, 0x39U, &reg_prod_id, sizeof(reg_prod_id), 1U) && reg_prod_id == 0x10U)
+    {
+      state_dev = MMC_READY;
+    }
+    else
+    {
+      state_dev = MMC_ERROR;
+    }
     break;
   case (MMC_ERROR):
   default:
