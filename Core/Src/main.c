@@ -344,7 +344,7 @@ static void app(UART_HandleTypeDef *handle_uart)
 
     if (state_mmc == MMC_MEAS_DONE)
     {
-      MMC5603NJ_get_measurement(buf_data, sizeof(buf_data), &data);
+      MMC5603NJ_get_data(buf_data, sizeof(buf_data), &data);
       state_app = APP_SEND;
     }
     else if (state_mmc == MMC_ERROR)
