@@ -109,6 +109,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+    // call app with NULL to disable diagnostic output.
     app(&huart2);
     /* USER CODE BEGIN 3 */
   }
@@ -345,6 +346,7 @@ static void app(UART_HandleTypeDef *handle_uart)
     if (state_mmc == MMC_MEAS_DONE)
     {
       MMC5603NJ_get_data(buf_data, sizeof(buf_data), &data);
+      // TODO: add data processing
       state_app = APP_SEND;
     }
     else if (state_mmc == MMC_ERROR)
@@ -355,6 +357,9 @@ static void app(UART_HandleTypeDef *handle_uart)
   }
   case (APP_SEND):
   {
+    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "[%lu]%f,%f,%f\r\n", HAL_GetTick(),
+             data.x, data.y, data.z);
+    HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
     state_app = APP_MEASURE;
     break;
   }
