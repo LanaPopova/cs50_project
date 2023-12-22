@@ -78,12 +78,11 @@ static char *get_str_state_mmc(MMC5603NJ_STATES_ENUM state_mmc_current);
 static bool read_registers(I2C_HandleTypeDef *handle_i2c,
                            uint8_t reg_addr,
                            uint8_t *buf_rx,
-                           size_t buf_sz,
-                           size_t num_regs);
+                           size_t buf_sz);
 static bool write_registers(I2C_HandleTypeDef *handle_i2c,
                             uint8_t reg_addr,
                             uint8_t *buf_tx,
-                            size_t num_regs);
+                            size_t buf_sz);
 
 static bool check_reg_addr(uint8_t reg_addr)
 {
@@ -162,11 +161,9 @@ static char *get_str_state_mmc(MMC5603NJ_STATES_ENUM state_mmc_current)
 static bool read_registers(I2C_HandleTypeDef *handle_i2c,
                            uint8_t reg_addr,
                            uint8_t *buf_rx,
-                           size_t buf_sz,
-                           size_t num_regs)
+                           size_t buf_sz)
 {
   static bool mmc_read_status;
-  static uint8_t buf_tx[1];
 
   mmc_read_status = false;
 
@@ -178,21 +175,13 @@ static bool read_registers(I2C_HandleTypeDef *handle_i2c,
     }
 
     if (!check_reg_addr(reg_addr) ||
-        num_regs == 0 ||
-        num_regs > MMC_NUM_REGS ||
-        buf_sz < num_regs)
+        buf_sz == 0 ||
+        buf_sz > MMC_NUM_REGS)
     {
       break;
     }
 
-    buf_tx[0] = reg_addr;
-
-    if (HAL_I2C_Master_Transmit(handle_i2c, MMC_ADDR, buf_tx, sizeof(buf_tx), 100U) != HAL_OK)
-    {
-      break;
-    }
-
-    if (HAL_I2C_Master_Receive(handle_i2c, MMC_ADDR, buf_rx, num_regs, 100U) != HAL_OK)
+    if (HAL_I2C_Mem_Read(handle_i2c, MMC_ADDR, reg_addr, I2C_MEMADD_SIZE_8BIT, buf_rx, buf_sz, 100U) != HAL_OK)
     {
       break;
     }
@@ -206,7 +195,7 @@ static bool read_registers(I2C_HandleTypeDef *handle_i2c,
 static bool write_registers(I2C_HandleTypeDef *handle_i2c,
                             uint8_t reg_addr,
                             uint8_t *buf_tx,
-                            size_t num_regs)
+                            size_t buf_sz)
 {
   static bool mmc_write_status;
 
@@ -220,18 +209,13 @@ static bool write_registers(I2C_HandleTypeDef *handle_i2c,
     }
 
     if (!check_reg_addr(reg_addr) ||
-        num_regs == 0 ||
-        num_regs > MMC_NUM_REGS)
+        buf_sz == 0 ||
+        buf_sz > MMC_NUM_REGS)
     {
       break;
     }
 
-    if (HAL_I2C_Master_Transmit(handle_i2c, MMC_ADDR, &reg_addr, 1U, 100U) != HAL_OK)
-    {
-      break;
-    }
-
-    if (HAL_I2C_Master_Transmit(handle_i2c, MMC_ADDR, buf_tx, num_regs, 100U) != HAL_OK)
+    if (HAL_I2C_Mem_Write(handle_i2c, MMC_ADDR, reg_addr, I2C_MEMADD_SIZE_8BIT, buf_tx, buf_sz, 100U) != HAL_OK)
     {
       break;
     }
@@ -275,7 +259,7 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleT
     break;
   case (MMC_CHECK_DEV):
     static uint8_t reg_prod_id;
-    if (read_registers(handle_i2c, 0x39U, &reg_prod_id, sizeof(reg_prod_id), 1U) && reg_prod_id == 0x10U)
+    if (read_registers(handle_i2c, PID, &reg_prod_id, sizeof(reg_prod_id)) && reg_prod_id == 0x10U)
     {
       state_init = MMC_READY;
     }
@@ -321,7 +305,7 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_Hand
     break;
   case (MMC_MEAS_START):
     static const uint8_t reg_ctrl0 = 0x01;
-    if (write_registers(handle_i2c, CTRL0, (uint8_t *)&reg_ctrl0, 1U))
+    if (write_registers(handle_i2c, CTRL0, (uint8_t *)&reg_ctrl0, sizeof(reg_ctrl0)))
     {
       state_meas = MMC_MEAS_WAIT;
     }
@@ -332,7 +316,7 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_Hand
     break;
   case (MMC_MEAS_WAIT):
     static uint8_t reg_status1;
-    if (read_registers(handle_i2c, STATUS1, &reg_status1, sizeof(reg_status1), 1U))
+    if (read_registers(handle_i2c, STATUS1, &reg_status1, sizeof(reg_status1)))
     {
       if ((reg_status1 & 0x40U) == 0x40U)
       {
@@ -345,7 +329,7 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_Hand
     }
     break;
   case (MMC_MEAS_READY):
-    if (read_registers(handle_i2c, XOUT0, buf_ptr, buf_sz, MMC5603NJ_MEAS_REGS))
+    if (read_registers(handle_i2c, XOUT0, buf_ptr, buf_sz))
     {
       state_meas = MMC_MEAS_DONE;
     }

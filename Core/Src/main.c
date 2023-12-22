@@ -110,7 +110,7 @@ int main(void)
   {
     /* USER CODE END WHILE */
     // call app with NULL to disable diagnostic output.
-    app(&huart2);
+    app(NULL);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
