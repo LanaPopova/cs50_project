@@ -20,7 +20,7 @@
 
 #define MMC_ADDR 0x60U // Device I2C address shifted to the left by 1 bit.
 #define MMC_NUM_REGS 22U
-#define MMC_LSB 0.00625f
+#define MMC_LSB 0.0625f
 
 typedef enum
 {
@@ -367,10 +367,17 @@ void MMC5603NJ_get_data(uint8_t *buf_ptr, size_t buf_sz, MMC5603NJ_DATA_STRUCT *
     return;
   }
 
-  meas_x = (uint32_t)(*(buf_ptr + 0)) << 12 | (uint32_t)(*(buf_ptr + 1)) << 4 | (uint32_t)(*(buf_ptr + 6)) >> 4;
-  meas_y = (uint32_t)(*(buf_ptr + 2)) << 12 | (uint32_t)(*(buf_ptr + 3)) << 4 | (uint32_t)(*(buf_ptr + 7)) >> 4;
-  meas_z = (uint32_t)(*(buf_ptr + 4)) << 12 | (uint32_t)(*(buf_ptr + 5)) << 4 | (uint32_t)(*(buf_ptr + 8)) >> 4;
+  meas_x = (uint32_t)(*(buf_ptr + 0)) << 12 |
+           (uint32_t)(*(buf_ptr + 1)) << 4 |
+           (uint32_t)(*(buf_ptr + 6)) >> 4;
+  meas_y = (uint32_t)(*(buf_ptr + 2)) << 12 |
+           (uint32_t)(*(buf_ptr + 3)) << 4 |
+           (uint32_t)(*(buf_ptr + 7)) >> 4;
+  meas_z = (uint32_t)(*(buf_ptr + 4)) << 12 |
+           (uint32_t)(*(buf_ptr + 5)) << 4 |
+           (uint32_t)(*(buf_ptr + 8)) >> 4;
 
+  // offset the measurement as full scale is -30 to 30 Gauss.
   meas_x -= (uint32_t)1 << 19;
   meas_y -= (uint32_t)1 << 19;
   meas_z -= (uint32_t)1 << 19;
