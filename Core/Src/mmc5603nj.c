@@ -304,7 +304,7 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_Hand
     }
     break;
   case (MMC_MEAS_START):
-    static const uint8_t reg_ctrl0 = 0x01;
+    static const uint8_t reg_ctrl0 = 0x21;
     if (write_registers(handle_i2c, CTRL0, (uint8_t *)&reg_ctrl0, sizeof(reg_ctrl0)))
     {
       state_meas = MMC_MEAS_WAIT;
