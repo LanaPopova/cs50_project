@@ -15,6 +15,24 @@
  *
  ******************************************************************************
  */
+/* USER CODE BEGIN License */
+/*  The application to detect vehicles using the MMC5603NJ magnetic sensor.
+ Copyright (C) 2023 Lana Popova.
+
+ This application, which includes any code enclosed within
+ "USER CODE ..." comments, is free software: you can redistribute it and/or
+ modify it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this application. If not, see <https://www.gnu.org/licenses/>. */
+/* USER CODE END License */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
