@@ -24,6 +24,7 @@
 #include "mmc5603nj.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -39,6 +40,8 @@ typedef enum
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MAGN_THRSHLD_UP_SQR 270400.0f
+#define MAGN_THRSHLD_DN_SQR 250000.0f
 #define MAX_SPEED_MPH 45U
 #define MIN_DISTANCE_FT 10U
 #define MSEC_IN_HOUR 3600000U
@@ -397,12 +400,46 @@ static void app(UART_HandleTypeDef *handle_uart)
 
 bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
 {
-  static bool is_detected;
-
-  is_detected = false;
+  static bool is_detected = false;
 
   if (data_ptr != NULL)
   {
+    static bool is_triggered = false;
+    static uint32_t ticks_now;
+    static uint32_t ticks_cleared = 0;
+    static float magn_sqr;
+
+    magn_sqr = data_ptr->x * data_ptr->x +
+               data_ptr->y * data_ptr->y +
+               data_ptr->z * data_ptr->z;
+
+    if (!is_triggered)
+    {
+      if (magn_sqr >= MAGN_THRSHLD_UP_SQR || magn_sqr <= MAGN_THRSHLD_DN_SQR)
+      {
+        is_triggered = true;
+        is_detected = true;
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+      }
+    }
+    else
+    {
+      if (magn_sqr < MAGN_THRSHLD_UP_SQR && magn_sqr > MAGN_THRSHLD_DN_SQR)
+      {
+        is_triggered = false;
+        ticks_cleared = HAL_GetTick();
+      }
+    }
+
+    ticks_now = HAL_GetTick();
+    if (ticks_now - ticks_cleared > MIN_TIME_MSEC)
+    {
+      if (!is_triggered && is_detected)
+      {
+        is_detected = false;
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+      }
+    }
   }
 
   return is_detected;
