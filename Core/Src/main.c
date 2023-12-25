@@ -24,6 +24,7 @@
 #include "mmc5603nj.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,7 +39,8 @@ typedef enum
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define VEHICLE "vehicle\r"
+#define NO_VEHICLE "-\r"
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,6 +64,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void app(UART_HandleTypeDef *handle_uart);
+static bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -346,13 +349,32 @@ static void app(UART_HandleTypeDef *handle_uart)
 
     if (state_mmc == MMC_MEAS_DONE)
     {
+      static bool detected = false;
+
       MMC5603NJ_get_data(buf_data, sizeof(buf_data), &data);
-      // TODO: add data processing
+
+      if (detect_vehicle(&data))
+      {
+        if (!detected)
+        {
+          detected = true;
+          HAL_UART_Transmit(&huart2, VEHICLE, sizeof(VEHICLE) - 1U, 100U);
+        }
+      }
+      else
+      {
+        if (detected)
+        {
+          detected = false;
+          HAL_UART_Transmit(&huart2, NO_VEHICLE, sizeof(NO_VEHICLE) - 1U, 100U);
+        }
+      }
+
       if (handle_uart != NULL)
       {
         snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f\r\n",
                  HAL_GetTick(), data.x, data.y, data.z);
-        HAL_UART_Transmit(handle_uart, buf_diag_app, sizeof(buf_diag_app), 100U);
+        HAL_UART_Transmit(handle_uart, buf_diag_app, strlen(buf_diag_app), 100U);
       }
     }
     else if (state_mmc == MMC_ERROR)
@@ -365,6 +387,19 @@ static void app(UART_HandleTypeDef *handle_uart)
   default:
     break;
   }
+}
+
+bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
+{
+  static bool is_detected;
+
+  is_detected = false;
+
+  if (data_ptr != NULL)
+  {
+  }
+
+  return is_detected;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
