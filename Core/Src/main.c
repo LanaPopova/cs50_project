@@ -66,8 +66,6 @@ typedef enum
 #define FT_IN_MI 5280U
 #define MIN_TIME_MSEC ((MIN_DISTANCE_FT * MSEC_IN_HOUR) / \
                        (MAX_SPEED_MPH * FT_IN_MI))
-#define VEHICLE ((const uint8_t *)"vehicle\r")
-#define NO_VEHICLE ((const uint8_t *)"-\r")
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -81,7 +79,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+static UART_HandleTypeDef *huart_app = NULL;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,7 +89,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void app(UART_HandleTypeDef *handle_uart);
-static bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr);
+static bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr, UART_HandleTypeDef *handle_uart);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -137,8 +135,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // call app with NULL to disable diagnostic output.
-    app(NULL);
+    app(huart_app);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -350,7 +347,6 @@ static void app(UART_HandleTypeDef *handle_uart)
   static STATES_APP_ENUM state_app = APP_INIT;
   static MMC5603NJ_STATES_ENUM state_mmc;
   static MMC5603NJ_DATA_STRUCT data;
-  static uint8_t buf_diag_app[64];
   static uint8_t buf_data[MMC5603NJ_MEAS_REGS] = {0};
 
   switch (state_app)
@@ -362,7 +358,7 @@ static void app(UART_HandleTypeDef *handle_uart)
     if (state_mmc == MMC_READY)
     {
       state_app = APP_MEASURE;
-      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
     }
     else if (state_mmc == MMC_ERROR)
     {
@@ -378,14 +374,7 @@ static void app(UART_HandleTypeDef *handle_uart)
     {
       MMC5603NJ_get_data(buf_data, sizeof(buf_data), &data);
 
-      detect_vehicle(&data);
-
-      if (handle_uart != NULL)
-      {
-        snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f\r\n",
-                 HAL_GetTick(), data.x, data.y, data.z);
-        HAL_UART_Transmit(handle_uart, buf_diag_app, strlen((const char *)buf_diag_app), 100U);
-      }
+      detect_vehicle(&data, handle_uart);
     }
     else if (state_mmc == MMC_ERROR)
     {
@@ -399,9 +388,10 @@ static void app(UART_HandleTypeDef *handle_uart)
   }
 }
 
-bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
+bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr, UART_HandleTypeDef *handle_uart)
 {
   static bool is_detected = false;
+  static uint8_t buf_diag_app[32];
 
   if (data_ptr != NULL)
   {
@@ -414,6 +404,12 @@ bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
                data_ptr->y * data_ptr->y +
                data_ptr->z * data_ptr->z;
 
+    if (handle_uart != NULL)
+    {
+      snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f\r\n", HAL_GetTick(), magn_sqr);
+      HAL_UART_Transmit(handle_uart, buf_diag_app, strlen((const char *)buf_diag_app), 100U);
+    }
+
     if (!is_triggered)
     {
       if (magn_sqr >= MAGN_THRSHLD_UP_SQR || magn_sqr <= MAGN_THRSHLD_DN_SQR)
@@ -421,7 +417,8 @@ bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
         is_triggered = true;
         is_detected = true;
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-        HAL_UART_Transmit(&huart2, VEHICLE, sizeof(VEHICLE) - 1U, 100U);
+        snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%s\r\n", HAL_GetTick(), "DET");
+        HAL_UART_Transmit(&huart2, buf_diag_app, strlen((const char *)buf_diag_app), 100U);
       }
     }
     else
@@ -440,7 +437,8 @@ bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
       {
         is_detected = false;
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-        HAL_UART_Transmit(&huart2, NO_VEHICLE, sizeof(NO_VEHICLE) - 1U, 100U);
+        snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%s\r\n", HAL_GetTick(), "CLR");
+        HAL_UART_Transmit(&huart2, buf_diag_app, strlen((const char *)buf_diag_app), 100U);
       }
     }
   }
@@ -452,7 +450,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == B1_Pin)
   {
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    if (huart_app == NULL)
+    {
+      huart_app = &huart2;
+    }
+    else
+    {
+      huart_app = NULL;
+    }
   }
   else
   {
