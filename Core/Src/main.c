@@ -53,7 +53,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-static bool button_pressed = false;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -363,15 +363,9 @@ static void app(UART_HandleTypeDef *handle_uart)
   }
   case (APP_SEND):
   {
-    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f,%u\r\n", HAL_GetTick(),
-             data.x, data.y, data.z, button_pressed);
+    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f\r\n", HAL_GetTick(),
+             data.x, data.y, data.z);
     HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
-
-    if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET)
-    {
-      button_pressed = false;
-    }
-
     state_app = APP_MEASURE;
     break;
   }
@@ -423,11 +417,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == B1_Pin)
   {
-    if (!button_pressed)
-    {
-      button_pressed = true;
-      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    }
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
   }
   else
   {
