@@ -358,26 +358,9 @@ static void app(UART_HandleTypeDef *handle_uart)
 
     if (state_mmc == MMC_MEAS_DONE)
     {
-      static bool detected = false;
-
       MMC5603NJ_get_data(buf_data, sizeof(buf_data), &data);
 
-      if (detect_vehicle(&data))
-      {
-        if (!detected)
-        {
-          detected = true;
-          HAL_UART_Transmit(&huart2, VEHICLE, sizeof(VEHICLE) - 1U, 100U);
-        }
-      }
-      else
-      {
-        if (detected)
-        {
-          detected = false;
-          HAL_UART_Transmit(&huart2, NO_VEHICLE, sizeof(NO_VEHICLE) - 1U, 100U);
-        }
-      }
+      detect_vehicle(&data);
 
       if (handle_uart != NULL)
       {
@@ -420,6 +403,7 @@ bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
         is_triggered = true;
         is_detected = true;
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+        HAL_UART_Transmit(&huart2, VEHICLE, sizeof(VEHICLE) - 1U, 100U);
       }
     }
     else
@@ -438,6 +422,7 @@ bool detect_vehicle(MMC5603NJ_DATA_STRUCT *data_ptr)
       {
         is_detected = false;
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+        HAL_UART_Transmit(&huart2, NO_VEHICLE, sizeof(NO_VEHICLE) - 1U, 100U);
       }
     }
   }
