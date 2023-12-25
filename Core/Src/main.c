@@ -39,8 +39,14 @@ typedef enum
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define VEHICLE "vehicle\r"
-#define NO_VEHICLE "-\r"
+#define MAX_SPEED_MPH 45U
+#define MIN_DISTANCE_FT 10U
+#define MSEC_IN_HOUR 3600000U
+#define FT_IN_MI 5280U
+#define MIN_TIME_MSEC ((MIN_DISTANCE_FT * MSEC_IN_HOUR) / \
+                       (MAX_SPEED_MPH * FT_IN_MI))
+#define VEHICLE ((const uint8_t *)"vehicle\r")
+#define NO_VEHICLE ((const uint8_t *)"-\r")
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -374,7 +380,7 @@ static void app(UART_HandleTypeDef *handle_uart)
       {
         snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f\r\n",
                  HAL_GetTick(), data.x, data.y, data.z);
-        HAL_UART_Transmit(handle_uart, buf_diag_app, strlen(buf_diag_app), 100U);
+        HAL_UART_Transmit(handle_uart, buf_diag_app, strlen((const char *)buf_diag_app), 100U);
       }
     }
     else if (state_mmc == MMC_ERROR)
