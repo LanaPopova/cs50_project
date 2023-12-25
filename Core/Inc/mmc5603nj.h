@@ -42,8 +42,8 @@ typedef struct
   float z;
 } MMC5603NJ_DATA_STRUCT;
 
-MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart);
-MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart, uint8_t *buf_ptr, size_t buf_sz);
+MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c);
+MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, uint8_t *buf_ptr, size_t buf_sz);
 void MMC5603NJ_get_data(uint8_t *buf_ptr, size_t buf_sz, MMC5603NJ_DATA_STRUCT *data_ptr);
 
 #endif /* INC_MMC5603NJ_H_ */

@@ -48,7 +48,6 @@ typedef enum
   PID = 0x39
 } REG_ADDRS_ENUM;
 
-static uint8_t buf_diag_mmc[64];
 static const REG_ADDRS_ENUM reg_addrs[MMC_NUM_REGS] = {
     XOUT0,
     XOUT1,
@@ -74,7 +73,6 @@ static const REG_ADDRS_ENUM reg_addrs[MMC_NUM_REGS] = {
     PID};
 
 static bool check_reg_addr(uint8_t reg_addr);
-static char *get_str_state_mmc(MMC5603NJ_STATES_ENUM state_mmc_current);
 static bool read_registers(I2C_HandleTypeDef *handle_i2c,
                            uint8_t reg_addr,
                            uint8_t *buf_rx,
@@ -101,61 +99,6 @@ static bool check_reg_addr(uint8_t reg_addr)
   }
 
   return is_valid;
-}
-
-static char *get_str_state_mmc(MMC5603NJ_STATES_ENUM state_mmc_current)
-{
-  static const char *state_mmc_str_init = "STATE_MMC_INIT";
-  static const char *state_mmc_str_check_hal = "STATE_MMC_CHECK_HAL";
-  static const char *state_mmc_str_check_dev = "STATE_MMC_CHECK_DEV";
-  static const char *state_mmc_str_ready = "STATE_MMC_READY";
-  static const char *state_mmc_str_error = "STATE_MMC_ERROR";
-  static const char *state_mmc_str_meas_init = "STATE_MMC_MEAS_INIT";
-  static const char *state_mmc_str_meas_start = "STATE_MMC_MEAS_START";
-  static const char *state_mmc_str_meas_wait = "STATE_MMC_MEAS_WAIT";
-  static const char *state_mmc_str_meas_ready = "STATE_MMC_MEAS_READY";
-  static const char *state_mmc_str_meas_done = "STATE_MMC_MEAS_DONE";
-  static const char *state_mmc_str_unknown = "STATE_MMC_UNKNOWN";
-  static char *state_mmc_str;
-
-  switch (state_mmc_current)
-  {
-  case (MMC_INIT):
-    state_mmc_str = (char *)state_mmc_str_init;
-    break;
-  case (MMC_CHECK_HAL):
-    state_mmc_str = (char *)state_mmc_str_check_hal;
-    break;
-  case (MMC_CHECK_DEV):
-    state_mmc_str = (char *)state_mmc_str_check_dev;
-    break;
-  case (MMC_READY):
-    state_mmc_str = (char *)state_mmc_str_ready;
-    break;
-  case (MMC_ERROR):
-    state_mmc_str = (char *)state_mmc_str_error;
-    break;
-  case (MMC_MEAS_INIT):
-    state_mmc_str = (char *)state_mmc_str_meas_init;
-    break;
-  case (MMC_MEAS_START):
-    state_mmc_str = (char *)state_mmc_str_meas_start;
-    break;
-  case (MMC_MEAS_WAIT):
-    state_mmc_str = (char *)state_mmc_str_meas_wait;
-    break;
-  case (MMC_MEAS_READY):
-    state_mmc_str = (char *)state_mmc_str_meas_ready;
-    break;
-  case (MMC_MEAS_DONE):
-    state_mmc_str = (char *)state_mmc_str_meas_done;
-    break;
-  default:
-    state_mmc_str = (char *)state_mmc_str_unknown;
-    break;
-  }
-
-  return state_mmc_str;
 }
 
 static bool read_registers(I2C_HandleTypeDef *handle_i2c,
@@ -226,12 +169,9 @@ static bool write_registers(I2C_HandleTypeDef *handle_i2c,
   return mmc_write_status;
 }
 
-MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart)
+MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c)
 {
   static MMC5603NJ_STATES_ENUM state_init = MMC_INIT;
-  static MMC5603NJ_STATES_ENUM state_init_was;
-
-  state_init_was = state_init;
 
   switch (state_init)
   {
@@ -274,22 +214,12 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_init(I2C_HandleTypeDef *handle_i2c, UART_HandleT
     break;
   }
 
-  if (handle_uart != NULL && state_init != state_init_was)
-  {
-    snprintf((char *)buf_diag_mmc, sizeof(buf_diag_mmc), "[%lu]state_mmc=%s\r\n", HAL_GetTick(),
-             get_str_state_mmc(state_init));
-    HAL_UART_Transmit(handle_uart, buf_diag_mmc, sizeof(buf_diag_mmc), 100U);
-  }
-
   return state_init;
 }
 
-MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_HandleTypeDef *handle_uart, uint8_t *buf_ptr, size_t buf_sz)
+MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, uint8_t *buf_ptr, size_t buf_sz)
 {
   static MMC5603NJ_STATES_ENUM state_meas = MMC_MEAS_INIT;
-  static MMC5603NJ_STATES_ENUM state_meas_was;
-
-  state_meas_was = state_meas;
 
   switch (state_meas)
   {
@@ -344,13 +274,6 @@ MMC5603NJ_STATES_ENUM MMC5603NJ_measure(I2C_HandleTypeDef *handle_i2c, UART_Hand
   case (MMC_ERROR):
   default:
     break;
-  }
-
-  if (handle_uart != NULL && state_meas != state_meas_was)
-  {
-    snprintf((char *)buf_diag_mmc, sizeof(buf_diag_mmc), "[%lu]state_mmc=%s\r\n", HAL_GetTick(),
-             get_str_state_mmc(state_meas));
-    HAL_UART_Transmit(handle_uart, buf_diag_mmc, sizeof(buf_diag_mmc), 100U);
   }
 
   return state_meas;
