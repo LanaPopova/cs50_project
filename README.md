@@ -38,4 +38,4 @@ The "mmc5603nj" .c and .h files contain the implementation of the sensor's drive
 [2]: https://www.st.com/en/evaluation-tools/nucleo-f072rb.html
 [3]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ-B/10452797
 [4]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ/10452796
-[5]: https://github.com/LanaPopova/cs50_project/blob/144b5ef51799dd05c3b5ae371c17734e4b7b0f30/example_measurement.png
+[5]: https://github.com/LanaPopova/cs50_project/blob/1447a98eaaff100d12974ee8851e689d29f46c5e/example_measurement.png
