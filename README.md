@@ -12,7 +12,9 @@ The primary objective of this project is to design and implement a vehicle detec
 
 ## Overview
 
-The prototype comprises the [NUCLEO-F072RB][2] and [MMC5603NJ-B][3] development boards. The latter integrates the [MMC5603NJ][4] sensor, a 3-axis Anisotropic Magneto-Resistive (AMR) sensor featuring an integrated signal processing circuit and a digital communication interface (I2C). With a measurement range of +/-30 Gauss (G), a 0.0625mG resolution, and a 2mG total RMS noise level, this sensor accurately measures magnetic field strength. Capable of detecting both the Earth's magnetic field and disruptions caused by passing vehicles containing substantial amount of ferrous materials, it plays a crucial role in the prototype's functionality.
+The prototype (refer to the figure below) comprises the [NUCLEO-F072RB][2] and [MMC5603NJ-B][3] development boards. The latter integrates the [MMC5603NJ][4] sensor, a 3-axis Anisotropic Magneto-Resistive (AMR) sensor featuring an integrated signal processing circuit and a digital communication interface (I2C). With a measurement range of +/-30 Gauss (G), a 0.0625mG resolution, and a 2mG total RMS noise level, this sensor accurately measures magnetic field strength. Capable of detecting both the Earth's magnetic field and disruptions caused by passing vehicles containing substantial amount of ferrous materials, it plays a crucial role in the prototype's functionality.
+
+![prototype.png][6]
 
 The application designed for the NUCLEO board performs the following tasks:
 
@@ -39,3 +41,4 @@ The "mmc5603nj" .c and .h files contain the implementation of the sensor's drive
 [3]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ-B/10452797
 [4]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ/10452796
 [5]: https://github.com/LanaPopova/cs50_project/blob/1447a98eaaff100d12974ee8851e689d29f46c5e/example_measurement.png
+[6]: TBD
