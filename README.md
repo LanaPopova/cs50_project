@@ -41,4 +41,4 @@ The "mmc5603nj" .c and .h files contain the implementation of the sensor's drive
 [3]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ-B/10452797
 [4]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ/10452796
 [5]: https://github.com/LanaPopova/cs50_project/blob/1447a98eaaff100d12974ee8851e689d29f46c5e/example_measurement.png
-[6]: TBD
+[6]: https://github.com/LanaPopova/cs50_project/blob/10423b1527bbfea5012f010862a1a6cf3e201e01/prototype.png
