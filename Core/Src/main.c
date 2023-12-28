@@ -53,7 +53,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-static bool button_pressed = false;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,6 +63,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void app(UART_HandleTypeDef *handle_uart);
+static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr);
 static char *get_str_state_app(STATES_APP_ENUM state_app_crnt);
 /* USER CODE END PFP */
 
@@ -363,13 +364,15 @@ static void app(UART_HandleTypeDef *handle_uart)
   }
   case (APP_SEND):
   {
-    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f,%u\r\n", HAL_GetTick(),
-             data.x, data.y, data.z, button_pressed);
-    HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
+    static float mag_sq;
+    static int len;
 
-    if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET)
+    mag_sq = get_magnitude_squared(&data);
+    len = snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f,%f\r\n", HAL_GetTick(),
+                   data.x, data.y, data.z, mag_sq);
+    if (len > 0 && len <= sizeof(buf_diag_app))
     {
-      button_pressed = false;
+      HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
     }
 
     state_app = APP_MEASURE;
@@ -386,6 +389,22 @@ static void app(UART_HandleTypeDef *handle_uart)
              get_str_state_app(state_app));
     HAL_UART_Transmit(handle_uart, buf_diag_app, sizeof(buf_diag_app), 100U);
   }
+}
+
+static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr)
+{
+  static float mgn_sqrd;
+
+  mgn_sqrd = 0;
+
+  if (data_ptr != NULL)
+  {
+    mgn_sqrd = data_ptr->x * data_ptr->x +
+               data_ptr->y * data_ptr->y +
+               data_ptr->z * data_ptr->z;
+  }
+
+  return mgn_sqrd;
 }
 
 static char *get_str_state_app(STATES_APP_ENUM state_app_crnt)
@@ -423,11 +442,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == B1_Pin)
   {
-    if (!button_pressed)
-    {
-      button_pressed = true;
-      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    }
+    __NOP();
   }
   else
   {
