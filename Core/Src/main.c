@@ -42,6 +42,7 @@ typedef enum
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define FIFO_SIZE 5U
+#define MAGN_SQRD_THRSHLD 12000.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,6 +66,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void app(UART_HandleTypeDef *handle_uart);
+bool detect_vehicle(float mag_sqrd, float mag_sqrd_med);
 static int compare_values(const void *a_ptr, const void *b_ptr);
 static float get_moving_median(float new_value);
 static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr);
@@ -357,7 +359,6 @@ static void app(UART_HandleTypeDef *handle_uart)
     if (state_mmc == MMC_MEAS_DONE)
     {
       MMC5603NJ_get_data(buf_data, sizeof(buf_data), &data);
-      // TODO: add data processing
       state_app = APP_SEND;
     }
     else if (state_mmc == MMC_ERROR)
@@ -369,16 +370,25 @@ static void app(UART_HandleTypeDef *handle_uart)
   case (APP_SEND):
   {
     static float mag_sq;
-    static float mag_sq_med;
+    static float mag_sq_med = 0.0f;
+    static bool is_vehicle = false;
     static int len;
 
     mag_sq = get_magnitude_squared(&data);
-    mag_sq_med = get_moving_median(mag_sq);
-    len = snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f,%f,%f\r\n", HAL_GetTick(),
-                   data.x, data.y, data.z, mag_sq, mag_sq_med);
+
+    // Once a vehicle is detected, stop updating median values as
+    // we do not know how long the vehicle will be near the sensor.
+    if (!is_vehicle)
+    {
+      mag_sq_med = get_moving_median(mag_sq);
+    }
+
+    is_vehicle = detect_vehicle(mag_sq, mag_sq_med);
+    len = snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%u\r\n", HAL_GetTick(),
+                   mag_sq, mag_sq_med, is_vehicle);
     if (len > 0 && len <= sizeof(buf_diag_app))
     {
-      HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
+      HAL_UART_Transmit(&huart2, buf_diag_app, len, 100U);
     }
 
     state_app = APP_MEASURE;
@@ -395,6 +405,32 @@ static void app(UART_HandleTypeDef *handle_uart)
              get_str_state_app(state_app));
     HAL_UART_Transmit(handle_uart, buf_diag_app, sizeof(buf_diag_app), 100U);
   }
+}
+
+bool detect_vehicle(float mag_sqrd, float mag_sqrd_med)
+{
+  static bool is_triggered = false;
+
+  if (!is_triggered)
+  {
+    if ((mag_sqrd > mag_sqrd_med + MAGN_SQRD_THRSHLD) ||
+        (mag_sqrd < mag_sqrd_med - MAGN_SQRD_THRSHLD))
+    {
+      is_triggered = true;
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+    }
+  }
+  else
+  {
+    if ((mag_sqrd <= mag_sqrd_med + MAGN_SQRD_THRSHLD) &&
+        (mag_sqrd >= mag_sqrd_med - MAGN_SQRD_THRSHLD))
+    {
+      is_triggered = false;
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+    }
+  }
+
+  return is_triggered;
 }
 
 static int compare_values(const void *a_ptr, const void *b_ptr)
