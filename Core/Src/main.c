@@ -24,6 +24,8 @@
 #include "mmc5603nj.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,7 +41,7 @@ typedef enum
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define FIFO_SIZE 5U
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -63,6 +65,8 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void app(UART_HandleTypeDef *handle_uart);
+static int compare_values(const void *a_ptr, const void *b_ptr);
+static float get_moving_median(float new_value);
 static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr);
 static char *get_str_state_app(STATES_APP_ENUM state_app_crnt);
 /* USER CODE END PFP */
@@ -324,7 +328,7 @@ static void app(UART_HandleTypeDef *handle_uart)
   static STATES_APP_ENUM state_app_was;
   static MMC5603NJ_STATES_ENUM state_mmc;
   static MMC5603NJ_DATA_STRUCT data;
-  static uint8_t buf_diag_app[64];
+  static uint8_t buf_diag_app[80];
   static uint8_t buf_data[MMC5603NJ_MEAS_REGS] = {0};
 
   state_app_was = state_app;
@@ -365,11 +369,13 @@ static void app(UART_HandleTypeDef *handle_uart)
   case (APP_SEND):
   {
     static float mag_sq;
+    static float mag_sq_med;
     static int len;
 
     mag_sq = get_magnitude_squared(&data);
-    len = snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f,%f\r\n", HAL_GetTick(),
-                   data.x, data.y, data.z, mag_sq);
+    mag_sq_med = get_moving_median(mag_sq);
+    len = snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "%lu,%f,%f,%f,%f,%f\r\n", HAL_GetTick(),
+                   data.x, data.y, data.z, mag_sq, mag_sq_med);
     if (len > 0 && len <= sizeof(buf_diag_app))
     {
       HAL_UART_Transmit(&huart2, buf_diag_app, sizeof(buf_diag_app), 100U);
@@ -389,6 +395,35 @@ static void app(UART_HandleTypeDef *handle_uart)
              get_str_state_app(state_app));
     HAL_UART_Transmit(handle_uart, buf_diag_app, sizeof(buf_diag_app), 100U);
   }
+}
+
+static int compare_values(const void *a_ptr, const void *b_ptr)
+{
+  float a = *((float *)a_ptr);
+  float b = *((float *)b_ptr);
+
+  return a < b ? -1 : (a == b ? 0 : 1);
+}
+
+static float get_moving_median(float new_value)
+{
+  static float fifo_buf[FIFO_SIZE] = {0};
+  static float sort_buf[FIFO_SIZE] = {0};
+  static const size_t med_idx = FIFO_SIZE / 2U;
+  static size_t idx;
+
+  // Push back values.
+  for (idx = 0; idx < (FIFO_SIZE - 1); idx++)
+  {
+    fifo_buf[idx] = fifo_buf[idx + 1];
+  }
+  // Add the latest value to the end.
+  fifo_buf[idx] = new_value;
+
+  memcpy(sort_buf, fifo_buf, sizeof(fifo_buf));
+  qsort(sort_buf, FIFO_SIZE, sizeof(float), &compare_values);
+
+  return sort_buf[med_idx] != 0 ? sort_buf[med_idx] : new_value;
 }
 
 static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr)
