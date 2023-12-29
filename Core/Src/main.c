@@ -65,12 +65,11 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
-static void app(UART_HandleTypeDef *handle_uart);
+static void app(void);
 bool detect_vehicle(float mag_sqrd, float mag_sqrd_med);
 static int compare_values(const void *a_ptr, const void *b_ptr);
 static float get_moving_median(float new_value);
 static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr);
-static char *get_str_state_app(STATES_APP_ENUM state_app_crnt);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -116,8 +115,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // call app with NULL to disable diagnostic output.
-    app(NULL);
+    app();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -324,22 +322,19 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-static void app(UART_HandleTypeDef *handle_uart)
+static void app(void)
 {
   static STATES_APP_ENUM state_app = APP_INIT;
-  static STATES_APP_ENUM state_app_was;
   static MMC5603NJ_STATES_ENUM state_mmc;
   static MMC5603NJ_DATA_STRUCT data;
   static uint8_t buf_diag_app[80];
   static uint8_t buf_data[MMC5603NJ_MEAS_REGS] = {0};
 
-  state_app_was = state_app;
-
   switch (state_app)
   {
   case (APP_INIT):
   {
-    state_mmc = MMC5603NJ_init(&hi2c1, handle_uart);
+    state_mmc = MMC5603NJ_init(&hi2c1);
 
     if (state_mmc == MMC_READY)
     {
@@ -354,7 +349,7 @@ static void app(UART_HandleTypeDef *handle_uart)
   }
   case (APP_MEASURE):
   {
-    state_mmc = MMC5603NJ_measure(&hi2c1, handle_uart, buf_data, sizeof(buf_data));
+    state_mmc = MMC5603NJ_measure(&hi2c1, buf_data, sizeof(buf_data));
 
     if (state_mmc == MMC_MEAS_DONE)
     {
@@ -397,13 +392,6 @@ static void app(UART_HandleTypeDef *handle_uart)
   case (APP_ERROR):
   default:
     break;
-  }
-
-  if (handle_uart != NULL && state_app != state_app_was)
-  {
-    snprintf((char *)buf_diag_app, sizeof(buf_diag_app), "[%lu]state_app=%s\r\n", HAL_GetTick(),
-             get_str_state_app(state_app));
-    HAL_UART_Transmit(handle_uart, buf_diag_app, sizeof(buf_diag_app), 100U);
   }
 }
 
@@ -476,37 +464,6 @@ static float get_magnitude_squared(MMC5603NJ_DATA_STRUCT *data_ptr)
   }
 
   return mgn_sqrd;
-}
-
-static char *get_str_state_app(STATES_APP_ENUM state_app_crnt)
-{
-  static const char *state_app_str_init = "STATE_APP_INIT";
-  static const char *state_app_str_meas = "STATE_APP_MEASURE";
-  static const char *state_app_str_send = "STATE_APP_SEND";
-  static const char *state_app_str_erro = "STATE_APP_ERROR";
-  static const char *state_app_str_unkn = "STATE_APP_UNKNOWN";
-  static char *state_app_str;
-
-  switch (state_app_crnt)
-  {
-  case (APP_INIT):
-    state_app_str = (char *)state_app_str_init;
-    break;
-  case (APP_MEASURE):
-    state_app_str = (char *)state_app_str_meas;
-    break;
-  case (APP_SEND):
-    state_app_str = (char *)state_app_str_send;
-    break;
-  case (APP_ERROR):
-    state_app_str = (char *)state_app_str_erro;
-    break;
-  default:
-    state_app_str = (char *)state_app_str_unkn;
-    break;
-  }
-
-  return state_app_str;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
