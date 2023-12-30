@@ -48,11 +48,11 @@ When the squared magnitude surpasses or falls below the average value, updates t
 
 ## Detection Issues
 
-Slower fluctuations in data can lead to undetected triggering events, as observed at the 5-second mark in the figure below, where a vehicle wasn't detected by the algorithm. Contrastingly, at 10 seconds, with a quicker rise time, the algorithm successfully detected the vehicle. Employing the decimation technique may offer a solution to ensure accurate vehicle detection.
+Slower fluctuations in data can lead to undetected triggering events, as observed around the 136-second mark in the figure below, where a vehicle wasn't detected by the algorithm. Contrastingly, at around the 207-second mark, with a quicker rise time, the algorithm successfully detected the vehicle. Employing the decimation technique may offer a solution to ensure accurate vehicle detection.
 
 ![missed_vehicle.png][7]
 
-The same vehicle can be detected twice due to the nature of sensor data. This issue can be resolved by introducing a deactivation delay. This delay could be calculated considering the average speed of vehicles on the specific road section where the sensor will be deployed, as well as a reasonable minimum distance between two vehicles.
+The same vehicle can be detected twice due to the nature of sensor data as can be seen around the 207-second mark. This issue can be resolved by introducing a deactivation delay. This delay could be calculated considering the average speed of vehicles on the specific road section where the sensor will be deployed, as well as a reasonable minimum distance between two vehicles.
 
 ![duplicate_detection.png][8]
 
