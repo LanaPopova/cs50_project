@@ -62,7 +62,7 @@ The same vehicle can be detected twice due to the nature of sensor data as can b
 2. Import the project from the repository into STM32 Cube IDE v 1.14.0.
 3. Build the project.
 
-[1]: TBD
+[1]: https://youtu.be/CncQI2-d2CE
 [2]: https://www.st.com/en/evaluation-tools/nucleo-f072rb.html
 [3]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ-B/10452797
 [4]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ/10452796
