@@ -44,7 +44,15 @@ The raw data for magnetic field magnitude served as the basis for analyzing how 
 
 A moving median filter was applied to smooth sensor data, establishing a baseline for comparison against the threshold. To optimize computation, squared magnitude values were utilized for threshold comparison, eliminating the need for square root operations. This threshold was set at 12000 mG^2.
 
-When the squared magnitude surpasses or falls below the average value, updates to the average value are paused until the squared magnitude has returned within the threshold. This approach aimed to accurately identify triggering events, considering the unknown duration of these events. However, this strategy proved less than ideal. Slower fluctuations in data lead to undetected triggering events, as observed at the 5-second mark in the figures below, where a vehicle wasn't detected by the algorithm. Contrastingly, at 10 seconds, with a quicker rise time, the algorithm successfully detected the vehicle. To address this limitation, employing the decimation technique may offer a solution to ensure accurate vehicle detection.
+When the squared magnitude surpasses or falls below the average value, updates to the average value are paused until the squared magnitude has returned within the threshold. This approach aims to accurately identify triggering events, considering the unknown duration of these events.
+
+## Detection Issues
+
+Slower fluctuations in data can lead to undetected triggering events, as observed at the 5-second mark in the figure below, where a vehicle wasn't detected by the algorithm. Contrastingly, at 10 seconds, with a quicker rise time, the algorithm successfully detected the vehicle. Employing the decimation technique may offer a solution to ensure accurate vehicle detection.
+
+The same vehicle can be detected twice due to the nature of sensor data. This issue can be resolved by introducing a deactivation delay. This delay could be calculated considering the average speed of vehicles on the specific road section where the sensor will be deployed, as well as a reasonable minimum distance between two vehicles.
+
+![example_vehicle_detection.png][7]
 
 ## Build Instructions
 
@@ -58,3 +66,4 @@ When the squared magnitude surpasses or falls below the average value, updates t
 [4]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ/10452796
 [5]: https://github.com/LanaPopova/cs50_project/blob/1447a98eaaff100d12974ee8851e689d29f46c5e/example_measurement.png
 [6]: https://github.com/LanaPopova/cs50_project/blob/5fd0418a57838a45e5bec5d71690c4679d072bab/prototype.png
+[7]: TBD
