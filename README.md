@@ -50,9 +50,11 @@ When the squared magnitude surpasses or falls below the average value, updates t
 
 Slower fluctuations in data can lead to undetected triggering events, as observed at the 5-second mark in the figure below, where a vehicle wasn't detected by the algorithm. Contrastingly, at 10 seconds, with a quicker rise time, the algorithm successfully detected the vehicle. Employing the decimation technique may offer a solution to ensure accurate vehicle detection.
 
+![missed_vehicle.png][7]
+
 The same vehicle can be detected twice due to the nature of sensor data. This issue can be resolved by introducing a deactivation delay. This delay could be calculated considering the average speed of vehicles on the specific road section where the sensor will be deployed, as well as a reasonable minimum distance between two vehicles.
 
-![example_vehicle_detection.png][7]
+![duplicate_detection.png][8]
 
 ## Build Instructions
 
@@ -64,6 +66,7 @@ The same vehicle can be detected twice due to the nature of sensor data. This is
 [2]: https://www.st.com/en/evaluation-tools/nucleo-f072rb.html
 [3]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ-B/10452797
 [4]: https://www.digikey.com/en/products/detail/memsic-inc/MMC5603NJ/10452796
-[5]: https://github.com/LanaPopova/cs50_project/blob/1447a98eaaff100d12974ee8851e689d29f46c5e/example_measurement.png
-[6]: https://github.com/LanaPopova/cs50_project/blob/5fd0418a57838a45e5bec5d71690c4679d072bab/prototype.png
-[7]: TBD
+[5]: https://github.com/LanaPopova/cs50_project/blob/10fbebc33f816cfd41b23e8dd98f0c1bdb179631/figures/example_measurement.png
+[6]: https://github.com/LanaPopova/cs50_project/blob/10fbebc33f816cfd41b23e8dd98f0c1bdb179631/figures/prototype.png
+[7]: https://github.com/LanaPopova/cs50_project/blob/10fbebc33f816cfd41b23e8dd98f0c1bdb179631/figures/missed_vehicle.png
+[8]: https://github.com/LanaPopova/cs50_project/blob/10fbebc33f816cfd41b23e8dd98f0c1bdb179631/figures/duplicate_detection.png
